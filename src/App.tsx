@@ -1,116 +1,206 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import OBR from "@owlbear-rodeo/sdk";
 import { QRCodeSVG } from "qrcode.react";
 
-type Status = "loading" | "ready" | "no-room" | "error";
+const METADATA_KEY = "com.quickeR/roomUrl";
+const MODAL_ID = "com.quickeR/fullscreen";
+const ROOM_URL_PREFIX = "https://www.owlbear.rodeo/room/";
+const MAX_URL_LENGTH = 2048;
 
-function getRoomUrl(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  const roomId = params.get("roomId");
-  if (!roomId) return null;
-  return `https://www.owlbear.rodeo/room/${roomId}`;
+function parseRoomName(url: string): string | null {
+  // URL format: .../room/{userId}/{roomName}?...
+  const slug = url.replace(ROOM_URL_PREFIX, "");
+  const parts = slug.split("/");
+  const raw = (parts[1] ?? "").split("?")[0];
+  if (!raw) return null;
+  return decodeURIComponent(raw).replace(/-/g, " ");
+}
+
+const ROOM_URL_PATTERN = new RegExp(
+  "^https://www\\.owlbear\\.rodeo/room/[A-Za-z0-9]{12}/[A-Za-z0-9%]{4,}"
+);
+
+function validateRoomUrl(url: string): string | null {
+  if (url.length > MAX_URL_LENGTH) return "URL is too long";
+  if (!ROOM_URL_PATTERN.test(url)) return "Not a valid Owlbear Rodeo room URL";
+  return null;
 }
 
 export default function App() {
-  const [status, setStatus] = useState<Status>("loading");
+  const [ready, setReady] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [input, setInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Wait for OBR SDK, then load any previously saved URL from room metadata
   useEffect(() => {
-    const url = getRoomUrl();
-    if (!url) {
-      // Fallback: wait for OBR ready in case roomId wasn't in params
-      OBR.onReady(() => {
-        // roomId should have been in query string; if not, show error
-        setStatus("no-room");
-      });
-      // Give params one more chance after a tick (some hosts hydrate late)
-      setTimeout(() => {
-        const retryUrl = getRoomUrl();
-        if (retryUrl) {
-          setRoomUrl(retryUrl);
-          setStatus("ready");
-        }
-      }, 200);
-      return;
-    }
-    setRoomUrl(url);
-    setStatus("ready");
+    OBR.onReady(async () => {
+      try {
+        const metadata = await OBR.room.getMetadata();
+        const saved = metadata[METADATA_KEY] as string | undefined;
+        if (saved) setRoomUrl(saved);
+      } catch {
+        // no saved URL yet
+      }
+      setReady(true);
+    });
   }, []);
 
-  const handleCopy = async () => {
-    if (!roomUrl) return;
+  // Dynamically resize popover height based on content
+  useEffect(() => {
+    if (!ready) return;
+    const height = roomUrl ? 460 : 280;
+    OBR.action.setHeight(height).catch(() => {});
+  }, [ready, roomUrl]);
+
+  // Focus input on first click anywhere in the popover
+  useEffect(() => {
+    if (!ready || roomUrl) return;
+    const handleClick = () => inputRef.current?.focus();
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [ready, roomUrl]);
+
+  const submitUrl = (url: string) => {
+    const trimmed = url.trim();
+    const err = validateRoomUrl(trimmed);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setRoomUrl(trimmed);
+    setInput("");
+    OBR.room.setMetadata({ [METADATA_KEY]: trimmed }).catch(() => {});
+  };
+
+  const handleClear = async () => {
+    setRoomUrl(null);
+    setError(null);
     try {
-      await navigator.clipboard.writeText(roomUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await OBR.room.setMetadata({ [METADATA_KEY]: undefined });
     } catch {
-      // clipboard API unavailable in some iframe contexts
+      // ignore
     }
   };
 
+  const handleFullscreen = () => {
+    if (!roomUrl) return;
+    OBR.modal.open({
+      id: MODAL_ID,
+      url: `/modal.html?roomUrl=${encodeURIComponent(roomUrl)}`,
+      height: 700,
+      width: 550,
+    });
+  };
+
+  const roomName = roomUrl ? parseRoomName(roomUrl) : null;
+
+  if (!ready) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a2e] p-4">
+        <div className="w-8 h-8 border-2 border-[#e8c97e] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a2e] p-4">
-      <div className="flex flex-col items-center gap-4 w-full max-w-[240px]">
-
-        {/* Wordmark */}
-        <div className="flex items-baseline gap-0.5 select-none">
-          <span className="text-[#e8c97e] font-bold text-xl tracking-tight">Q</span>
-          <span className="text-[#c8c8d8] font-light text-xl tracking-tight">uicke</span>
-          <span className="text-[#e8c97e] font-bold text-xl tracking-tight">R</span>
+    <div className="flex flex-col min-h-screen bg-[#1a1a2e]">
+      {/* Header bar with title */}
+      <div className="flex items-center justify-center py-2 bg-[#252540] border-b border-[#3a3a5c]">
+        <div className="flex items-baseline select-none">
+          <span className="text-[#e8c97e] font-bold text-2xl" style={{ marginRight: "-0.07em" }}>Q</span>
+          <span className="text-[#e8c97e] font-bold text-2xl tracking-tight" style={{ marginRight: "-0.07em" }}>uicke</span>
+          <span className="text-[#e8c97e] font-bold text-2xl">R</span>
         </div>
+      </div>
 
-        {/* QR Panel */}
-        {status === "loading" && (
-          <div className="w-[200px] h-[200px] rounded-xl bg-[#252540] flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-[#e8c97e] border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
+      {/* Content */}
+      <div className="flex flex-col items-center justify-center flex-1 p-4">
+        <div className="flex flex-col items-center gap-4 w-full max-w-[260px]">
 
-        {status === "ready" && roomUrl && (
-          <>
-            {/* QR code in a white card so scanners have clean contrast */}
-            <div className="p-3 bg-white rounded-xl shadow-lg shadow-black/40">
-              <QRCodeSVG
-                value={roomUrl}
-                size={192}
-                bgColor="#ffffff"
-                fgColor="#1a1a2e"
-                level="M"
-                includeMargin={false}
+          {roomUrl ? (
+            <>
+              {/* QR code in a white card so scanners have clean contrast */}
+              <div className="p-3 bg-white rounded-xl shadow-lg shadow-black/40">
+                <QRCodeSVG
+                  value={roomUrl}
+                  size={192}
+                  bgColor="#ffffff"
+                  fgColor="#1a1a2e"
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+
+              {/* Instructional label with room name */}
+              <p className="text-[#8888aa] text-sm text-center leading-relaxed">
+                Scan to join{roomName ? <> <span className="text-[#c8c8d8] font-medium">{roomName}</span></> : " this room"} on your device
+              </p>
+
+              {/* URL chip — right-justified so slug is visible */}
+              <div className="w-full bg-[#252540] rounded-lg px-3 py-2">
+                <span className="block text-[#8888cc] text-xs font-mono truncate text-right" dir="rtl">
+                  {roomUrl}
+                </span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleClear}
+                  className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
+                >
+                  Change URL
+                </button>
+                <span className="text-[#686868]">|</span>
+                <button
+                  onClick={handleFullscreen}
+                  className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
+                >
+                  Full Screen
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Paste prompt */}
+              <p className="text-[#8888aa] text-xl text-center leading-relaxed">
+                Paste your Room's<br />invite link from the<br />
+                <span className="text-white">Invite Players</span> <svg className="inline-block align-text-bottom text-white" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M 15 12 c 2.21 0 4 -1.79 4 -4 s -1.79 -4 -4 -4 s -4 1.79 -4 4 s 1.79 4 4 4 m -9 -2 V 8 c 0 -0.55 -0.45 -1 -1 -1 s -1 0.45 -1 1 v 2 H 2 c -0.55 0 -1 0.45 -1 1 s 0.45 1 1 1 h 2 v 2 c 0 0.55 0.45 1 1 1 s 1 -0.45 1 -1 v -2 h 2 c 0.55 0 1 -0.45 1 -1 s -0.45 -1 -1 -1 Z m 9 4 c -2.67 0 -8 1.34 -8 4 v 1 c 0 0.55 0.45 1 1 1 h 14 c 0.55 0 1 -0.45 1 -1 v -1 c 0 -2.66 -5.33 -4 -8 -4" /></svg> button<br />in the Player List
+              </p>
+
+              <input
+                ref={inputRef}
+                autoFocus
+                type="text"
+                maxLength={MAX_URL_LENGTH}
+                value={input}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setInput(val);
+                  setError(null);
+                  // Auto-submit when a valid OBR room URL is pasted
+                  const trimmed = val.trim();
+                  if (ROOM_URL_PATTERN.test(trimmed)) {
+                    setTimeout(() => submitUrl(trimmed), 0);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitUrl(input);
+                }}
+                placeholder="Click here, then Ctrl+V to paste"
+                className="w-full bg-[#252540] text-[#c8c8d8] text-xs font-mono rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#e8c97e] placeholder:text-[#c8c8d8]"
               />
-            </div>
 
-            {/* Instructional label */}
-            <p className="text-[#8888aa] text-xs text-center leading-relaxed">
-              Scan to join this room on your device
-            </p>
+              {error && (
+                <p className="text-[#cc6666] text-xs text-center">{error}</p>
+              )}
+            </>
+          )}
 
-            {/* URL chip + copy button */}
-            <button
-              onClick={handleCopy}
-              title="Copy room URL"
-              className="flex items-center gap-2 w-full bg-[#252540] hover:bg-[#2e2e55] active:scale-95 transition-all rounded-lg px-3 py-2 group"
-            >
-              <span className="flex-1 text-[#6666aa] text-[10px] font-mono truncate text-left">
-                {roomUrl}
-              </span>
-              <span className="shrink-0 text-[10px] font-medium text-[#e8c97e] group-hover:text-white transition-colors">
-                {copied ? "✓" : "copy"}
-              </span>
-            </button>
-          </>
-        )}
-
-        {(status === "no-room" || status === "error") && (
-          <div className="w-[200px] rounded-xl bg-[#252540] flex flex-col items-center justify-center gap-2 py-8 px-4 text-center">
-            <span className="text-2xl">⚠️</span>
-            <p className="text-[#8888aa] text-xs">
-              No room ID found. Make sure QuickeR is running inside an Owlbear Rodeo room.
-            </p>
-          </div>
-        )}
-
+        </div>
       </div>
     </div>
   );

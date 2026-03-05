@@ -1,9 +1,13 @@
 {
   "name": "quickeR",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "sync-version": "node -e \"const m=JSON.parse(require('fs').readFileSync('public/manifest.json','utf8'));m.version=require('./package.json').version;require('fs').writeFileSync('public/manifest.json',JSON.stringify(m,null,2)+'\\n')\"",
+    "predev": "npm run sync-version",
     "dev": "vite",
+    "prebuild": "npm run sync-version",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
