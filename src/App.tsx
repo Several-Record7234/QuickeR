@@ -50,9 +50,19 @@ export default function App() {
       }
       setReady(true);
 
-      return OBR.player.onChange((player) => {
+      const unsubPlayer = OBR.player.onChange((player) => {
         setIsGM(player.role === "GM");
       });
+
+      const unsubMetadata = OBR.room.onMetadataChange((metadata) => {
+        const saved = metadata[METADATA_KEY] as string | undefined;
+        setRoomUrl(saved ?? null);
+      });
+
+      return () => {
+        unsubPlayer();
+        unsubMetadata();
+      };
     });
   }, []);
 
@@ -60,7 +70,7 @@ export default function App() {
   useEffect(() => {
     if (!ready) return;
     const height = roomUrl
-      ? isGM ? 460 : 380
+      ? isGM ? 460 : 340
       : isGM ? 280 : 160;
     OBR.action.setHeight(height).catch(() => {});
   }, [ready, roomUrl, isGM]);
@@ -147,14 +157,15 @@ export default function App() {
                 Scan to join{roomName ? <> <span className="text-[#c8c8d8] font-medium">{roomName}</span></> : " this room"} on your device
               </p>
 
-              {/* URL chip — right-justified so slug is visible */}
-              <div className="w-full bg-[#252540] rounded-lg px-3 py-2">
-                <span className="block text-[#8888cc] text-xs font-mono truncate text-right" dir="rtl">
-                  {roomUrl}
-                </span>
-              </div>
+              {/* URL chip + action buttons (GM only) */}
+              {isGM && (
+                <div className="w-full bg-[#252540] rounded-lg px-3 py-2">
+                  <span className="block text-[#8888cc] text-xs font-mono truncate text-right" dir="rtl">
+                    {roomUrl}
+                  </span>
+                </div>
+              )}
 
-              {/* Action buttons (GM only) */}
               {isGM && (
                 <div className="flex items-center gap-4">
                   <button
