@@ -6,7 +6,7 @@
   "icon": "/icon.png",
   "author": "Andrew C",
   "homepage_url": "https://www.github.com/Several-Record7234/QuickeR",
-  "background": "/background.html",
+  "background_page": "/background.html",
   "action": {
     "title": "QuickeR — Room QR Code",
     "icon": "/icon.svg",

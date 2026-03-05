@@ -3,7 +3,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { QRCodeSVG } from "qrcode.react";
 
 const METADATA_KEY = "com.quickeR/roomUrl";
-const FULLSCREEN_KEY = "com.quickeR/showFullscreen";
+const BROADCAST_CHANNEL = "com.quickeR/showFullscreen";
 const ROOM_URL_PREFIX = "https://www.owlbear.rodeo/room/";
 const MAX_URL_LENGTH = 2048;
 
@@ -87,8 +87,8 @@ export default function App() {
 
   const handleFullscreen = () => {
     if (!roomUrl) return;
-    OBR.room
-      .setMetadata({ [FULLSCREEN_KEY]: { url: roomUrl, at: Date.now() } })
+    OBR.broadcast
+      .sendMessage(BROADCAST_CHANNEL, roomUrl, { destination: "ALL" })
       .catch(() => {});
   };
 

@@ -4,7 +4,9 @@ An [Owlbear Rodeo](https://owlbear.rodeo) extension that generates a scannable Q
 
 ## How It Works
 
-Open the Player List and click on the Invite Players button to copy the Room's URL. Next, click the **QuickeR** Action icon in your OBR room; a popover appears with a URL entry field that you can select and paste into to create a QR code immediately, and then you can also send that full screen to all connected players - like the TV or projector that your players are currently loojking at. Players at the table scan the QR code with their smartphone or tablet camera and are taken straight to the OBR Room in their browser. Compared to sharing the txt URL via messaging service, this is much... quicker 😁
+Open the Player List and click on the Invite Players button to copy the Room's URL. Next, click the **QuickeR** Action icon in your OBR room; a popover appears with a URL entry field that you can select and paste into to create a QR code immediately, and then you can also send that fullscreen to all connected players - like the TV or projector that your players are currently looking at.
+
+Players at the table scan the QR code with their smartphone or tablet camera, and are taken straight to the OBR Room in their browser. Compared to sharing the text URL via messaging service, this is much... QuickeR 😁
 
 
 
