@@ -28,6 +28,7 @@ function validateRoomUrl(url: string): string | null {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [isGM, setIsGM] = useState(false);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -37,22 +38,32 @@ export default function App() {
   useEffect(() => {
     OBR.onReady(async () => {
       try {
-        const metadata = await OBR.room.getMetadata();
+        const [metadata, role] = await Promise.all([
+          OBR.room.getMetadata(),
+          OBR.player.getRole(),
+        ]);
         const saved = metadata[METADATA_KEY] as string | undefined;
         if (saved) setRoomUrl(saved);
+        setIsGM(role === "GM");
       } catch {
         // no saved URL yet
       }
       setReady(true);
+
+      return OBR.player.onChange((player) => {
+        setIsGM(player.role === "GM");
+      });
     });
   }, []);
 
   // Dynamically resize popover height based on content
   useEffect(() => {
     if (!ready) return;
-    const height = roomUrl ? 460 : 280;
+    const height = roomUrl
+      ? isGM ? 460 : 380
+      : isGM ? 280 : 160;
     OBR.action.setHeight(height).catch(() => {});
-  }, [ready, roomUrl]);
+  }, [ready, roomUrl, isGM]);
 
   // Focus input on first click anywhere in the popover
   useEffect(() => {
@@ -143,24 +154,26 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleClear}
-                  className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
-                >
-                  Change URL
-                </button>
-                <span className="text-[#686868]">|</span>
-                <button
-                  onClick={handleFullscreen}
-                  className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
-                >
-                  Full Screen
-                </button>
-              </div>
+              {/* Action buttons (GM only) */}
+              {isGM && (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handleClear}
+                    className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
+                  >
+                    Change URL
+                  </button>
+                  <span className="text-[#686868]">|</span>
+                  <button
+                    onClick={handleFullscreen}
+                    className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors"
+                  >
+                    Full Screen
+                  </button>
+                </div>
+              )}
             </>
-          ) : (
+          ) : isGM ? (
             <>
               {/* Paste prompt */}
               <p className="text-[#8888aa] text-xl text-center leading-relaxed">
@@ -195,6 +208,10 @@ export default function App() {
                 <p className="text-[#cc6666] text-xs text-center">{error}</p>
               )}
             </>
+          ) : (
+            <p className="text-[#8888aa] text-sm text-center leading-relaxed">
+              Waiting for the GM to set up<br />the room invite link
+            </p>
           )}
 
         </div>
