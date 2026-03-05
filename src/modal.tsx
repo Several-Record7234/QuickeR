@@ -46,7 +46,7 @@ function Modal() {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title */}
-        <div className="flex items-baseline gap-1 select-none">
+        <div className="flex items-baseline select-none">
           <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl" style={{ marginRight: "-0.07em" }}>Q</span>
           <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl tracking-tight" style={{ marginRight: "-0.07em" }}>uicke</span>
           <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl">R</span>
