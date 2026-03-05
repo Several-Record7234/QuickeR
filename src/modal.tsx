@@ -42,19 +42,19 @@ function Modal() {
       onClick={handleClose}
     >
       <div
-        className="flex flex-col items-center gap-6 bg-[#1a1a2e] rounded-2xl p-8 shadow-2xl max-w-[90vw]"
+        className="flex flex-col items-center gap-4 sm:gap-6 bg-[#1a1a2e] rounded-2xl p-4 sm:p-8 shadow-2xl max-w-[90vw]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title */}
         <div className="flex items-baseline gap-1 select-none">
-          <span className="text-[#e8c97e] font-bold text-5xl" style={{ marginRight: "-0.07em" }}>Q</span>
-          <span className="text-[#e8c97e] font-bold text-5xl tracking-tight" style={{ marginRight: "-0.07em" }}>uicke</span>
-          <span className="text-[#e8c97e] font-bold text-5xl">R</span>
+          <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl" style={{ marginRight: "-0.07em" }}>Q</span>
+          <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl tracking-tight" style={{ marginRight: "-0.07em" }}>uicke</span>
+          <span className="text-[#e8c97e] font-bold text-3xl sm:text-5xl">R</span>
         </div>
 
-        {/* QR Code */}
+        {/* QR Code — scales down on small screens */}
         {roomUrl && (
-          <div className="p-4 bg-white rounded-2xl shadow-lg shadow-black/40">
+          <div className="p-4 bg-white rounded-2xl shadow-lg shadow-black/40 w-full max-w-[416px]">
             <QRCodeSVG
               value={roomUrl}
               size={384}
@@ -62,12 +62,13 @@ function Modal() {
               fgColor="#1a1a2e"
               level="M"
               includeMargin={false}
+              className="w-full h-auto"
             />
           </div>
         )}
 
         {/* Instruction */}
-        <p className="text-[#8888aa] text-xl text-center leading-relaxed">
+        <p className="text-[#8888aa] text-base sm:text-xl text-center leading-relaxed">
           Scan to join{roomName ? <> <span className="text-[#c8c8d8] font-medium">{roomName}</span></> : " this room"} on your device
         </p>
 
