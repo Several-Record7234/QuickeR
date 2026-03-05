@@ -70,7 +70,7 @@ export default function App() {
   useEffect(() => {
     if (!ready) return;
     const height = roomUrl
-      ? isGM ? 460 : 340
+      ? isGM ? 460 : 360
       : isGM ? 280 : 160;
     OBR.action.setHeight(height).catch(() => {});
   }, [ready, roomUrl, isGM]);
