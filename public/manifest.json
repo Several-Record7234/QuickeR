@@ -1,0 +1,15 @@
+{
+  "name": "QuickeR",
+  "version": "0.1.0",
+  "manifest_version": 1,
+  "description": "Generate a QR code for your room invite link — let players at the table scan and join instantly.",
+  "author": "",
+  "homepage_url": "",
+  "action": {
+    "title": "QuickeR — Room QR Code",
+    "icon": "/icon.svg",
+    "popover": "/",
+    "height": 340,
+    "width": 280
+  }
+}
