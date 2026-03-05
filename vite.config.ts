@@ -15,6 +15,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         modal: resolve(__dirname, "modal.html"),
+        background: resolve(__dirname, "background.html"),
       },
     },
   },

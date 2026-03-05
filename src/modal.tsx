@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import OBR from "@owlbear-rodeo/sdk";
 import { QRCodeSVG } from "qrcode.react";
 import "./index.css";
 
 const MODAL_ID = "com.quickeR/fullscreen";
+const AUTO_CLOSE_MS = 15_000;
 const ROOM_URL_PREFIX = "https://www.owlbear.rodeo/room/";
 
 function parseRoomName(url: string): string | null {
@@ -20,9 +21,20 @@ function Modal() {
   const roomUrl = params.get("roomUrl") ?? "";
   const roomName = parseRoomName(roomUrl);
 
+  const [remaining, setRemaining] = useState(AUTO_CLOSE_MS / 1000);
+
   const handleClose = () => {
     OBR.modal.close(MODAL_ID);
   };
+
+  useEffect(() => {
+    const timer = setTimeout(handleClose, AUTO_CLOSE_MS);
+    const tick = setInterval(() => setRemaining((r) => r - 1), 1000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(tick);
+    };
+  }, []);
 
   return (
     <div
@@ -64,7 +76,7 @@ function Modal() {
           onClick={handleClose}
           className="text-[#e8c97e] hover:text-white text-sm font-medium transition-colors px-6 py-2 rounded-lg bg-[#252540] hover:bg-[#2e2e55]"
         >
-          Close
+          Close ({remaining}s)
         </button>
       </div>
     </div>
