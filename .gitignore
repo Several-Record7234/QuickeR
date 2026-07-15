@@ -28,7 +28,6 @@ Claude.md
 # Claude-related files
 .claude/
 CLAUDE.md
-progress.md
 
 # Build artefacts
 *.tsbuildinfo
