@@ -24,3 +24,11 @@ Desktop.ini
 
 # Claude
 Claude.md
+
+# Claude-related files
+.claude/
+CLAUDE.md
+progress.md
+
+# Build artefacts
+*.tsbuildinfo
