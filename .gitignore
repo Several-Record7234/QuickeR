@@ -32,3 +32,4 @@ progress.md
 
 # Build artefacts
 *.tsbuildinfo
+work-markers.log
